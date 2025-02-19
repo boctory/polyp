@@ -9,6 +9,122 @@ GIANA (Gastrointestinal Image ANAlysis) 데이터셋을 활용하여 다양한 �
 2. 실시간 처리가 가능한 효율적인 모델 구현
 3. 다양한 내시경 환경에서의 강건한 성능
 
+## 개발 스토리
+
+### 1. 프로젝트 시작 (개발 환경 설정)
+1. **개발 환경 구축**
+   ```bash
+   # 1. 가상환경 생성 및 활성화
+   python -m venv venv
+   source venv/bin/activate
+
+   # 2. 필요한 라이브러리 설치
+   pip install tensorflow numpy opencv-python albumentations
+   pip install matplotlib tqdm pillow scikit-learn
+
+   # 3. 의존성 저장
+   pip freeze > requirements.txt
+   ```
+
+2. **프로젝트 구조 설계**
+   - 모듈화된 구조로 설계하여 유지보수성 고려
+   - 실험 결과와 소스코드 분리하여 관리
+
+### 2. 데이터 처리 파이프라인 구현
+1. **데이터 전처리 (data_loader.py)**
+   ```python
+   # 1. 이미지 로딩 및 전처리
+   def _load_image(self, image_path, is_mask=False):
+       img = tf.io.read_file(image_path)
+       img = tf.image.decode_bmp(img_raw, channels=3)
+       img = tf.image.resize(img, self.img_size)
+       return img
+
+   # 2. 데이터 증강 파이프라인 구성
+   self.aug_pipeline = A.Compose([
+       A.HorizontalFlip(p=0.5),
+       A.VerticalFlip(p=0.5),
+       A.RandomRotate90(p=0.5),
+       # ... 추가 증강 기법
+   ])
+   ```
+
+### 3. 모델 아키텍처 구현 (models.py)
+1. **기본 Encoder-Decoder 모델**
+   - 처음에는 단순한 구조로 시작
+   - Conv2D와 BatchNorm 위주로 구현
+
+2. **U-Net 구현 시 겪은 어려움**
+   ```python
+   # Skip Connection 구현에서 어려웠던 점
+   def call(self, x):
+       skip_connections = []
+       for encoder_block in self.encoder:
+           x = encoder_block(x)
+           skip_connections.append(x)  # 특징맵 저장
+       
+       # 디코더에서 특징맵 결합 시 차원 맞추기가 까다로웠음
+       skip_connections = skip_connections[::-1]
+       for decoder_block, skip in zip(self.decoder, skip_connections):
+           x = decoder_block(x)
+           x = layers.Concatenate()([x, skip])
+   ```
+
+### 4. 학습 과정에서의 시행착오
+1. **메모리 관리**
+   - 처음에는 OOM (Out of Memory) 오류 발생
+   - 배치 크기 조정과 tf.data.Dataset의 prefetch 활용으로 해결
+
+2. **학습 안정성 확보**
+   ```python
+   # 1. 학습률 스케줄링 도입
+   initial_learning_rate = 1e-3
+   lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+       initial_learning_rate, decay_steps=1000, decay_rate=0.9
+   )
+
+   # 2. Early Stopping 구현
+   patience_counter = 0
+   best_val_dice = 0
+   ```
+
+### 5. 디버깅 및 문제 해결
+1. **주요 문제점과 해결 방법**
+   - 낮은 Dice Score
+     → 데이터 증강 기법 추가 및 손실 함수 조정
+   - 느린 학습 속도
+     → tf.data 파이프라인 최적화
+   - 과적합 문제
+     → Dropout과 BatchNorm 레이어 추가
+
+2. **성능 개선 과정**
+   ```python
+   # 1. 메트릭 모니터링 추가
+   with summary_writer.as_default():
+       tf.summary.scalar('train_loss', train_loss_metric.result())
+       tf.summary.scalar('val_dice', val_dice_metric.result())
+
+   # 2. 시각화 도구 구현
+   def save_prediction_samples(model, dataset, epoch):
+       # 예측 결과 시각화 및 저장
+   ```
+
+### 6. 배운 점과 성장
+1. **기술적 성장**
+   - TensorFlow/Keras 프레임워크 숙달
+   - 딥러닝 모델 설계 및 구현 능력 향상
+   - 데이터 파이프라인 최적화 경험
+
+2. **프로젝트 관리 스킬**
+   - 실험 결과 문서화의 중요성
+   - 버전 관리 시스템 활용
+   - 모듈화된 코드 설계의 이점
+
+3. **향후 개선 계획**
+   - Attention 메커니즘 도입 검토
+   - 모델 경량화 연구
+   - 하이퍼파라미터 자동 튜닝 구현
+
 ## 개발 과정
 
 ### 1. 데이터셋 구성
