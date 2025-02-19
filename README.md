@@ -112,6 +112,24 @@ tensorboard --logdir logs
 | `experiment_progress.md` | 실험 진행 기록 | • 실험 진행 상황<br>• 중간 결과 분석<br>• 문제점 및 개선사항 |
 | `experiment_results.md` | 최종 결과 정리 | • 정량적 성능 평가<br>• 정성적 분석<br>• 시각화 결과 |
 
+### 버전 관리 제외 파일 (.gitignore)
+```
+# Python 관련
+__pycache__/          # 파이썬 캐시 파일
+*.py[cod]            # 컴파일된 파이썬 파일
+venv/                # 가상 환경
+
+# 데이터 및 로그
+logs/                # 학습 로그 및 체크포인트
+data/                # 데이터셋 디렉토리
+*.log                # 로그 파일
+
+# 시스템 파일
+.DS_Store            # macOS 시스템 파일
+.idea/               # PyCharm 설정
+.vscode/             # VS Code 설정
+```
+
 ### 디렉토리 구조
 ```
 project/
